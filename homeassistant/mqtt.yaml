@@ -1,0 +1,81 @@
+mqtt:
+  climate:
+    - name: Aussentemperatur Offset
+      unique_id: "Aussentemperatur_offset"
+      device:
+        name: Heizung
+        identifiers: "S/N: 7956226500000000"
+        manufacturer: "Vissmann"
+        model: "Vitodens 200-W"
+      temperature_state_topic: "open3e/vitodens200/OutsideTemperatureOffset"
+      temperature_command_topic: "open3e/cmnd"
+      temperature_command_template: >
+        {% set value_target = (value*1) | int %}
+        {% set cmd = {'mode': 'write', 'data':[['896', value_target]],'addr':'0x680'} %}
+        {{ cmd | to_json }}
+      temperature_unit: "C"
+      min_temp: -20
+      
+    - name: Heizkreis
+      unique_id: "Heizung_Heizkreis"
+      device:
+        name: Heizung
+        identifiers: "S/N: 7956226502679127"
+        manufacturer: "Viessmann"
+        model: "Vitodens 200-W"
+      modes:
+        - "off"
+        - "auto"
+      mode_state_topic: "open3e/vitodens200/MixerOneCircuitOperationState/Mode/ID"
+      mode_state_template: "{{'off' if value_json == 0 else 'auto'}}"
+      mode_command_topic: "open3e/cmnd"
+      mode_command_template: >
+        {% set values = { 'auto':'0102', 'off':'0000'} %}
+        {% set cmd = {'mode': 'write-raw', 'data':[[1415, values[value]]]} %}
+        {{ cmd | to_json }}
+      payload_on: "1"
+      payload_off: "0"
+      power_command_topic: "open3e/cmnd"
+      power_command_template: >
+        {% set values = { '1':'0102', '0':'0000'} %}
+        {% set cmd = {'mode': 'write-raw', 'data':[[1415, values[value]]]} %}
+        {{ cmd | to_json }}
+#        {% set cmd = {'mode': 'write', 'data':[[1415, value]]} %}
+#        {{ cmd | to_json }}
+      action_topic: "open3e/vitodens200/Flame/Flame"
+      action_template: "{{'idle' if value_json == 0 else 'heating'}}"
+      temperature_state_topic: "open3e/vitodens200/MixerOneCircuitRoomTemperatureSetpoint"
+      temperature_command_topic: "open3e/cmnd"
+      temperature_command_template: >
+        {% set value_target = (value*10) | int %}
+        {% set hk1_bp = states('sensor.heizung_betriebsprogramm_vissmann_open3e') %}
+        {% if (hk1_bp=="Komfort") %}
+        {% set value_com = min(max(30, value_target),370) %}
+        {% set value_sta = min(max(30, value_target-20),370) %}
+        {% set value_red = min(max(30, value_target-40),370) %}
+        {% elif (hk1_bp=="Reduziert") or (hk1_bp=="Frostschutz") or (hk1_bp=="Abschaltbetrieb") %}
+        {% set value_com = min(max(30, value_target+40),370) %}
+        {% set value_sta = min(max(30, value_target+20),370) %}
+        {% set value_red = min(max(30, value_target),370) %}
+        {% else %}  
+        {% set value_com = min(max(30, value_target+20),370) %}
+        {% set value_sta = min(max(30, value_target),370) %}
+        {% set value_red = min(max(30, value_target-20),370) %}
+        {% endif %} 
+         {% set cmddata = '%02x' % (value_com % 256) + '%02x' % (value_com // 256) + '%02x' % (value_sta % 256) + '%02x' % (value_sta // 256) + '%02x' % (value_red % 256) + '%02x' % (value_red // 256) + '000000' %}
+        {% set cmd = {'mode': 'write-raw', 'data':[[424, cmddata]]} %}
+        {{ cmd | to_json }}
+      preset_mode_state_topic: "open3e/vitodens200/MixerOneCircuitOperationState/State/ID"
+      preset_mode_value_template: "{{ states('sensor.heizung_betriebsprogramm_vissmann_open3e') }}"
+      preset_modes:
+        - "eco"
+        - "home"
+        - "comfort"
+      preset_mode_command_topic: "home/set/heizung/preset"
+      preset_mode_command_template: >
+        {% set targetstate = (value) %}
+        {{ targetstate }}
+      current_temperature_topic: "open3e/vitodens200/MixerOneCircuitRoomTemperatureSensor/Actual"
+      precision: 0.1
+      max_temp: 37
+      min_temp: 3

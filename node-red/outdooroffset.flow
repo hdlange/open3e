@@ -5,7 +5,7 @@
         "z": "0ab28280b45e1167",
         "name": "Heizung Aussentemperatursensor Offset berechnen",
         "info": "Morgens ist der Sensor für ca. 1 Stunde in der Sonne\nUnterschied berechnen zwischen Wetterstation und dem Sensor\n\nInputs:\nws.Temperature.value\nsensor.heizung_aussentemp_vissmann_open3e\ninput_number.heizung_aussentemperatur_gebaude_offset\n\nOutput\n--> input_number.heizung_aussentemperatur_sensor_offset\n",
-        "x": 250,
+        "x": 210,
         "y": 3740,
         "wires": []
     },
@@ -240,6 +240,13 @@
                 "pt": "global",
                 "to": "data.new_state.attributes.temperature",
                 "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "\"threshold \" & $string($abs(data.new_state.attributes.temperature))",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -247,10 +254,12 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 630,
+        "x": 510,
         "y": 4020,
         "wires": [
-            []
+            [
+                "ae815aa2e2a409eb"
+            ]
         ]
     },
     {
@@ -274,19 +283,19 @@
         "id": "2891c40661e1f555",
         "type": "switch",
         "z": "0ab28280b45e1167",
-        "name": "Abweichung > +-2?",
+        "name": "Abweichung > +- threshold?",
         "property": "differenz",
         "propertyType": "msg",
         "rules": [
             {
                 "t": "gt",
-                "v": "2",
-                "vt": "num"
+                "v": "heizung.vissmann.aussentemperatur.threshold",
+                "vt": "global"
             },
             {
                 "t": "lt",
-                "v": "-2",
-                "vt": "num"
+                "v": "heizung.vissmann.aussentemperatur.threshold",
+                "vt": "global"
             },
             {
                 "t": "else"
@@ -295,7 +304,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 3,
-        "x": 870,
+        "x": 900,
         "y": 3880,
         "wires": [
             [
@@ -418,6 +427,107 @@
         "wires": []
     },
     {
+        "id": "ae815aa2e2a409eb",
+        "type": "mqtt out",
+        "z": "0ab28280b45e1167",
+        "name": "",
+        "topic": "home/status/heizung/outdoorsensorthreshold",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "a0233fa7.1e9db",
+        "x": 1160,
+        "y": 4020,
+        "wires": []
+    },
+    {
+        "id": "248d8d0f5d8cb65f",
+        "type": "mqtt in",
+        "z": "0ab28280b45e1167",
+        "name": "",
+        "topic": "home/set/heizung/outdoorsensorthreshold",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "a0233fa7.1e9db",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 4100,
+        "wires": [
+            [
+                "93e1d3852350dbf3",
+                "d4b44d2dd59156bf"
+            ]
+        ]
+    },
+    {
+        "id": "93e1d3852350dbf3",
+        "type": "change",
+        "z": "0ab28280b45e1167",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "heizung.vissmann.aussentemperatur.threshold",
+                "pt": "global",
+                "to": "$number($substringAfter(payload,\" \" ))",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 640,
+        "y": 4100,
+        "wires": [
+            [
+                "0f453e0f42153e2d"
+            ]
+        ]
+    },
+    {
+        "id": "d4b44d2dd59156bf",
+        "type": "debug",
+        "z": "0ab28280b45e1167",
+        "name": "debug 18",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 500,
+        "y": 4160,
+        "wires": []
+    },
+    {
+        "id": "0f453e0f42153e2d",
+        "type": "debug",
+        "z": "0ab28280b45e1167",
+        "name": "debug 19",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 980,
+        "y": 4160,
+        "wires": []
+    },
+    {
         "id": "68d43683.b7d22",
         "type": "server",
         "name": "Home Assistant",
@@ -439,5 +549,37 @@
         "statusHourCycle": "h23",
         "statusTimeFormat": "h:m",
         "enableGlobalContextStore": true
+    },
+    {
+        "id": "a0233fa7.1e9db",
+        "type": "mqtt-broker",
+        "name": "virtual-mqtt",
+        "broker": "192.168.1.31",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "compatmode": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

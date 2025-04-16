@@ -75,13 +75,48 @@
         "id": "2f9990ded3f20504",
         "type": "change",
         "z": "0ab28280b45e1167",
-        "name": "",
+        "name": "unterschied berechnen",
         "rules": [
             {
                 "t": "set",
                 "p": "heizung.vissmann.aussentemperatur.sensor",
                 "pt": "global",
                 "to": "payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "aktdiff",
+                "pt": "msg",
+                "to": "($round($number($globalContext('ws.Temperature.value')) - $globalContext('heizung.vissmann.aussentemperatur.sensor') ))",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "alteroffset",
+                "pt": "msg",
+                "to": "($globalContext('heizung.vissmann.aussentemperatur.OutsideTempOffset'))",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "neueroffset",
+                "pt": "msg",
+                "to": "((alteroffset) + (aktdiff))",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "offsetdifferenz",
+                "pt": "msg",
+                "to": "($abs(((alteroffset) - (neueroffset))))",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "neueroffset",
                 "tot": "msg"
             }
         ],
@@ -90,11 +125,12 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 630,
+        "x": 520,
         "y": 3820,
         "wires": [
             [
-                "c485bc98d9eca27a"
+                "2891c40661e1f555",
+                "0124297eedd08457"
             ]
         ]
     },
@@ -111,52 +147,16 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1280,
+        "x": 780,
         "y": 3760,
         "wires": []
-    },
-    {
-        "id": "c485bc98d9eca27a",
-        "type": "change",
-        "z": "0ab28280b45e1167",
-        "name": "berechne Offset f. Aussensensor",
-        "rules": [
-            {
-                "t": "set",
-                "p": "payload",
-                "pt": "msg",
-                "to": "($round($number($globalContext('ws.Temperature.value')) - $globalContext('heizung.vissmann.aussentemperatur.sensor') + $globalContext('heizung.vissmann.aussentemperatur.OutsideTempOffset')))",
-                "tot": "jsonata"
-            },
-            {
-                "t": "set",
-                "p": "heizung.vissmann.aussentemperatur.tempoffset",
-                "pt": "global",
-                "to": "payload",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 1040,
-        "y": 3820,
-        "wires": [
-            [
-                "0124297eedd08457",
-                "1289e7a0ea87e4b4"
-            ]
-        ],
-        "info": "Aussentemperatursensor fehler durch Sonne in Heizkurvenverschiebung korrigieren:\n$globalContext('setpoint')-($globalContext('setpoint')\n\n\nheizung.vissmann.aussentemperatur.sensor - ws.Temperature.value \n\n+ \n\nheizung.vissmann.aussentemperatur.gebaeudeoffset (Vorgabe für die Verschiebung)\n\n= input_number.heizung_aussentemperatur_sensor_offset\n\nzusätzlich in heizung.vissmann.aussentemperatur.tempoffset"
     },
     {
         "id": "61c334365adebcf9",
         "type": "debug",
         "z": "0ab28280b45e1167",
         "name": "climateObject",
-        "active": false,
+        "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -284,16 +284,11 @@
         "type": "switch",
         "z": "0ab28280b45e1167",
         "name": "Abweichung > +- threshold?",
-        "property": "differenz",
+        "property": "offsetdifferenz",
         "propertyType": "msg",
         "rules": [
             {
                 "t": "gt",
-                "v": "heizung.vissmann.aussentemperatur.threshold",
-                "vt": "global"
-            },
-            {
-                "t": "lt",
                 "v": "heizung.vissmann.aussentemperatur.threshold",
                 "vt": "global"
             },
@@ -303,17 +298,14 @@
         ],
         "checkall": "true",
         "repair": false,
-        "outputs": 3,
-        "x": 900,
-        "y": 3880,
+        "outputs": 2,
+        "x": 840,
+        "y": 3820,
         "wires": [
             [
                 "8cba9e1eea51d5b8",
-                "e8c1c0be7b68eb5a"
-            ],
-            [
-                "8cba9e1eea51d5b8",
-                "e8c1c0be7b68eb5a"
+                "e8c1c0be7b68eb5a",
+                "26359b4f3be7c3da"
             ],
             []
         ]
@@ -343,8 +335,8 @@
         "blockInputOverrides": true,
         "domain": "climate",
         "service": "set_temperature",
-        "x": 1290,
-        "y": 3880,
+        "x": 1190,
+        "y": 3820,
         "wires": [
             []
         ]
@@ -362,68 +354,8 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1280,
-        "y": 3940,
-        "wires": []
-    },
-    {
-        "id": "1289e7a0ea87e4b4",
-        "type": "change",
-        "z": "0ab28280b45e1167",
-        "name": "differenz alter und neuer Wert",
-        "rules": [
-            {
-                "t": "set",
-                "p": "alteroffset",
-                "pt": "msg",
-                "to": "heizung.vissmann.aussentemperatur.OutsideTempOffset",
-                "tot": "global"
-            },
-            {
-                "t": "set",
-                "p": "neueroffset",
-                "pt": "msg",
-                "to": "payload",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "differenz",
-                "pt": "msg",
-                "to": "(neueroffset-alteroffset)",
-                "tot": "jsonata"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 550,
-        "y": 3880,
-        "wires": [
-            [
-                "2891c40661e1f555",
-                "5a813d5fc3dd5225"
-            ]
-        ],
-        "info": "Aussentemperatursensor fehler durch Sonne in Heizkurvenverschiebung korrigieren:\n$globalContext('setpoint')-($globalContext('setpoint')\n\n\nheizung.vissmann.aussentemperatur.sensor - ws.Temperature.value \n\n+ \n\nheizung.vissmann.aussentemperatur.gebaeudeoffset (Vorgabe für die Verschiebung)\n\n= input_number.heizung_aussentemperatur_sensor_offset\n\nzusätzlich in heizung.vissmann.aussentemperatur.tempoffset"
-    },
-    {
-        "id": "5a813d5fc3dd5225",
-        "type": "debug",
-        "z": "0ab28280b45e1167",
-        "name": "debug 17",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 780,
-        "y": 3940,
+        "x": 1200,
+        "y": 3900,
         "wires": []
     },
     {
@@ -525,6 +457,23 @@
         "statusType": "auto",
         "x": 980,
         "y": 4160,
+        "wires": []
+    },
+    {
+        "id": "26359b4f3be7c3da",
+        "type": "debug",
+        "z": "0ab28280b45e1167",
+        "name": "debug 17",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1080,
+        "y": 3760,
         "wires": []
     },
     {

@@ -1,20 +1,27 @@
 mqtt:
   climate:
     - name: Aussentemperatur Offset
-      unique_id: "Aussentemperatur_offset"
-      device:
-        name: Heizung
-        identifiers: "S/N: 7956226500000000"
-        manufacturer: "Vissmann"
-        model: "Vitodens 200-W"
-      temperature_state_topic: "open3e/vitodens200/OutsideTemperatureOffset"
-      temperature_command_topic: "open3e/cmnd"
-      temperature_command_template: >
-        {% set value_target = (value*1) | int %}
-        {% set cmd = {'mode': 'write', 'data':[['896', value_target]],'addr':'0x680'} %}
-        {{ cmd | to_json }}
-      temperature_unit: "C"
-      min_temp: -20
+      unique_id: "Aussentemperatur_offset"
+      device:
+        name: Heizung
+        identifiers: "S/N: 7956226502679127"
+        manufacturer: "Vissmann"
+        model: "Vitodens 200-W"
+      temperature_state_topic: "open3e/vitodens200/OutsideTemperatureOffset"
+      temperature_command_topic: "open3e/cmnd"
+      temperature_command_template: >
+        {% set value_target = (value*1) | int %}
+        {% set cmd = {'mode': 'write', 'data':[['896', value_target]],'addr':'0x680'} %}
+        {{ cmd | to_json }}
+      preset_mode_state_topic: "home/status/heizung/outdoorsensorthreshold"
+      preset_modes:
+        - "threshold 2"
+        - "threshold 3"
+        - "threshold 4"
+        - "threshold 5"
+      preset_mode_command_topic: "home/set/heizung/outdoorsensorthreshold"
+      temperature_unit: "C"
+      min_temp: -20
       
     - name: Heizkreis
       unique_id: "Heizung_Heizkreis"
